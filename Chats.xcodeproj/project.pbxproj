@@ -7,12 +7,25 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		650084AB307B1C90007B5B1F /* Chats.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Chats.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6586E756307CD66E002E6327 /* Chats.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = Chats.app; path = "/Volumes/ay-pee-ef-es/Projects/Xcode Projects/iOS App/Chats/build/Debug-iphoneos/Chats.app"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		6586E76E307CDFC9002E6327 /* Exceptions for "Chats" folder in "Chats" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 650084AA307B1C90007B5B1F /* Chats */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		650084AD307B1C90007B5B1F /* Chats */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				6586E76E307CDFC9002E6327 /* Exceptions for "Chats" folder in "Chats" target */,
+			);
 			path = Chats;
 			sourceTree = "<group>";
 		};
@@ -33,16 +46,7 @@
 			isa = PBXGroup;
 			children = (
 				650084AD307B1C90007B5B1F /* Chats */,
-				650084AC307B1C90007B5B1F /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		650084AC307B1C90007B5B1F /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				650084AB307B1C90007B5B1F /* Chats.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -53,8 +57,9 @@
 			buildConfigurationList = 650084B6307B1C97007B5B1F /* Build configuration list for PBXNativeTarget "Chats" */;
 			buildPhases = (
 				650084A7307B1C90007B5B1F /* Sources */,
-				650084A8307B1C90007B5B1F /* Frameworks */,
 				650084A9307B1C90007B5B1F /* Resources */,
+				650084A8307B1C90007B5B1F /* Frameworks */,
+				650084BC307B2579007B5B1F /* Run Script */,
 			);
 			buildRules = (
 			);
@@ -67,7 +72,7 @@
 			packageProductDependencies = (
 			);
 			productName = Chats;
-			productReference = 650084AB307B1C90007B5B1F /* Chats.app */;
+			productReference = 6586E756307CD66E002E6327 /* Chats.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -95,7 +100,7 @@
 			mainGroup = 650084A2307B1C8F007B5B1F;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 650084AC307B1C90007B5B1F /* Products */;
+			productRefGroup = 650084A2307B1C8F007B5B1F;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -113,6 +118,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		650084BC307B2579007B5B1F /* Run Script */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Run Script";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#!/bin/bash\nset -euo pipefail\nsleep 2\n\n# Xcode's script phase has a stripped-down PATH, so add the usual ldid locations\nexport PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\"\n\n# Only package real device builds (skip simulator)\nif [ \"${PLATFORM_NAME}\" != \"iphoneos\" ]; then\n  echo \"note: Skipping IPA creation (PLATFORM_NAME=${PLATFORM_NAME})\"\n  exit 0\nfi\n\nif ! command -v ldid >/dev/null 2>&1; then\n  echo \"error: ldid not found. Install it with: brew install ldid\"\n  exit 1\nfi\n\nAPP_PATH=\"${TARGET_BUILD_DIR}/${WRAPPER_NAME}\"\nOUT_DIR=\"${PROJECT_DIR}/ipa\"\nIPA_PATH=\"${OUT_DIR}/${PRODUCT_NAME}.ipa\"\nENTITLEMENTS=\"${PROJECT_DIR}/entitlements.plist\"   # optional, see below\nSTAGE_DIR=\"$(mktemp -d)\"\ntrap 'rm -rf \"${STAGE_DIR}\"' EXIT\n\nif [ ! -d \"${APP_PATH}\" ]; then\n  echo \"error: App bundle not found at ${APP_PATH}\"\n  exit 1\nfi\n\nmkdir -p \"${OUT_DIR}\" \"${STAGE_DIR}/Payload\"\ncp -R \"${APP_PATH}\" \"${STAGE_DIR}/Payload/\"\nSTAGED_APP=\"${STAGE_DIR}/Payload/${WRAPPER_NAME}\"\n\n# Fake-sign helper: uses entitlements if the file exists, plain -S otherwise\nsign() {\n  if [ -f \"${ENTITLEMENTS}\" ]; then\n    ldid -S\"${ENTITLEMENTS}\" \"$1\"\n  else\n    ldid -S \"$1\"\n  fi\n}\n\n# Sign nested code first (frameworks, dylibs, app extensions), then the main binary\nif [ -d \"${STAGED_APP}/Frameworks\" ]; then\n  for fw in \"${STAGED_APP}/Frameworks/\"*.framework; do\n    [ -d \"$fw\" ] || continue\n    fw_exec=\"${fw}/$(basename \"${fw}\" .framework)\"\n    [ -f \"${fw_exec}\" ] && ldid -S \"${fw_exec}\"\n  done\n  for dylib in \"${STAGED_APP}/Frameworks/\"*.dylib; do\n    [ -f \"$dylib\" ] && ldid -S \"$dylib\"\n  done\nfi\n\nif [ -d \"${STAGED_APP}/PlugIns\" ]; then\n  for appex in \"${STAGED_APP}/PlugIns/\"*.appex; do\n    [ -d \"$appex\" ] || continue\n    ex_exec=\"${appex}/$(defaults read \"${appex}/Info\" CFBundleExecutable)\"\n    [ -f \"${ex_exec}\" ] && ldid -S \"${ex_exec}\"\n  done\nfi\n\nsign \"${STAGED_APP}/${EXECUTABLE_NAME}\"\n\n# Remove the old IPA so zip builds fresh instead of updating in place\nrm -f \"${IPA_PATH}\"\n(cd \"${STAGE_DIR}\" && zip -qry \"${IPA_PATH}\" Payload)\n\necho \"note: Fake-signed IPA created at ${IPA_PATH}\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		650084A7307B1C90007B5B1F /* Sources */ = {
@@ -249,29 +276,43 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Chats/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_CODE_SIGN_FLAGS = "";
+				OTHER_SWIFT_FLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = me.mineturtle2.Chats;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -280,29 +321,43 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Chats/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_CODE_SIGN_FLAGS = "";
+				OTHER_SWIFT_FLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = me.mineturtle2.Chats;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
